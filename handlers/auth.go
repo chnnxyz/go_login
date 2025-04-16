@@ -56,6 +56,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    token, _ := utils.GenerateJWT(user.Username)
+    token, _ := utils.GenerateJWT(user.Username, user.IsSuper)
     json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
