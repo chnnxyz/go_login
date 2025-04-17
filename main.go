@@ -48,6 +48,6 @@ func main() {
     r.HandleFunc("/auth/register", handlers.Register).Methods("POST")
     r.HandleFunc("/auth/login", handlers.Login).Methods("POST")
 
-    log.Println("Auth service running on :8080")
+    log.Println("Auth service running on :8081")
     http.ListenAndServe(":8081", r)
 }
