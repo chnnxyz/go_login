@@ -12,6 +12,7 @@ import (
   "cyberia_auth/models"
   "cyberia_auth/handlers"
   "golang.org/x/crypto/bcrypt"
+  "github.com/rs/cors"
 )
 
 func init() {
@@ -47,7 +48,16 @@ func main() {
     r := mux.NewRouter()
     r.HandleFunc("/auth/register", handlers.Register).Methods("POST")
     r.HandleFunc("/auth/login", handlers.Login).Methods("POST")
+	// Set up CORS options
+	corsOptions := cors.New(cors.Options{
+		AllowedOrigins:   []string{"https://admin.cyberiacollective.com"}, // Adjust based on your frontend URL
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	})
 
+	// Wrap the router with CORS middleware
+	handler := corsOptions.Handler(r)
     log.Println("Auth service running on :8081")
-    http.ListenAndServe(":8081", r)
+    http.ListenAndServe(":8081", handler)
 }
