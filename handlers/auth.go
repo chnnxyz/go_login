@@ -1,61 +1,92 @@
-
 package handlers
 
 import (
-  "cyberia_auth/config"
-  "cyberia_auth/models"
-  "cyberia_auth/utils"
-  "encoding/json"
-  "net/http"
-  "golang.org/x/crypto/bcrypt"
+	"cyberia_auth/config"
+	"cyberia_auth/models"
+	"cyberia_auth/utils"
+	"encoding/json"
+	"net/http"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Credentials struct {
-  Username string `json:"username"`
-  Password string `json:"password"`
+	Username string  `json:"username"`
+	Password string  `json:"password"`
+	RoleID   *string `json:"roleId"`
 }
 
-// Register handles user registration, parsing a request into
 func Register(w http.ResponseWriter, r *http.Request) {
-  var creds Credentials
-  json.NewDecoder(r.Body).Decode(&creds)
+	var creds Credentials
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
 
-  hashedPassword, _ := bcrypt.GenerateFromPassword(
-    []byte(creds.Password), bcrypt.DefaultCost,
-  )
-  user := models.User{
-      Username: creds.Username, Password: string(hashedPassword),
-  }
+	var roleID *uuid.UUID = nil
+	if creds.RoleID != nil && *creds.RoleID != "" {
+		parsedID, err := uuid.Parse(*creds.RoleID)
+		if err != nil {
+			http.Error(w, "Invalid role ID format", http.StatusBadRequest)
+			return
+		}
+		// Validate role exists
+		var role models.Role
+		if err := config.DB.First(&role, "id = ?", parsedID).Error; err != nil {
+			http.Error(w, "Role not found", http.StatusBadRequest)
+			return
+		}
+		roleID = &parsedID
+	}
 
-  // config.DB.Create returns nil on no error,
-  // TODO: handle different error types
-  if err := config.DB.Create(&user).Error; err != nil {
-    http.Error(w, "Username taken", http.StatusBadRequest)
-    return
-  }
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(creds.Password), bcrypt.DefaultCost)
 
-  w.WriteHeader(http.StatusCreated)
+	user := models.User{
+		Username: creds.Username,
+		Password: string(hashedPassword),
+		RoleID:   *roleID,
+	}
+
+	if err := config.DB.Create(&user).Error; err != nil {
+		http.Error(w, "Username taken", http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }
 
 // Login handles login. using http requests and responeses.
 func Login(w http.ResponseWriter, r *http.Request) {
-    var creds Credentials
-    json.NewDecoder(r.Body).Decode(&creds)
+	var creds Credentials
+	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
 
-    var user models.User
-    
-    // Similarly, GORM returns an error if the user is not found
-    if err := config.DB.Where("username = ?", creds.Username).First(&user).Error; err != nil {
-        http.Error(w, "User not found", http.StatusUnauthorized)
-        return
-    }
+	var user models.User
 
-    // 
-    if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil {
-        http.Error(w, "Invalid password", http.StatusUnauthorized)
-        return
-    }
+	if err := config.DB.Preload("Role").Where("username = ?", creds.Username).First(&user).Error; err != nil {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
 
-    token, _ := utils.GenerateJWT(user.Username, user.IsSuper)
-    json.NewEncoder(w).Encode(map[string]string{"token": token})
+	// Check password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil {
+		http.Error(w, "Invalid password", http.StatusUnauthorized)
+		return
+	}
+
+	// Determine if user is superuser based on role name
+	isSuper := user.Role.Name == "SuperUser"
+
+	// Generate token
+	token, err := utils.GenerateJWT(user.Username, isSuper)
+	if err != nil {
+		http.Error(w, "Token generation failed", http.StatusInternalServerError)
+		return
+	}
+
+	// Send token
+	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }

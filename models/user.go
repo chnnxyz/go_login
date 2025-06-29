@@ -1,10 +1,24 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
 
 type User struct {
-    gorm.Model
-    Username string `gorm:"unique"`
-    Password string
-    IsSuper  bool
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
+	Username  string    `gorm:"unique;not null"`
+	Password  string    `gorm:"not null"`
+	RoleID    uuid.UUID `gorm:"type:uuid"` // Foreign key
+	Role      Role      `gorm:"foreignKey:RoleID"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// BeforeCreate hook to set UUID before inserting a new record
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	u.ID = uuid.New()
+	return
 }
