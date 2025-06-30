@@ -1,20 +1,22 @@
 package utils
 
 import (
-    "os"
-    "time"
-    "github.com/golang-jwt/jwt/v5"
+	"os"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateJWT(username string, isSuper bool) (string, error) {
-    secret := []byte(os.Getenv("JWT_SECRET"))
+func GenerateJWT(username, roleName string, isSuper bool) (string, error) {
+	secret := []byte(os.Getenv("JWT_SECRET"))
 
-    claims := jwt.MapClaims{
-        "username": username,
-        "exp": time.Now().Add(time.Hour * 72).Unix(),
-        "isSuper": isSuper,
-    }
+	claims := jwt.MapClaims{
+		"username": username,
+		"role":     roleName,
+		"isSuper":  isSuper,
+		"exp":      time.Now().Add(72 * time.Hour).Unix(),
+	}
 
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    return token.SignedString(secret)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(secret)
 }
