@@ -16,7 +16,7 @@ type Credentials struct {
 	RoleName *string `json:"roleName"`
 }
 
-func Register(w http.ResponseWriter, r *http.Request) {
+func RegisterPromoter(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -25,9 +25,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	// Default to "Promoter" if RoleName is nil or empty
 	roleName := "Promoter"
-	if creds.RoleName != nil && *creds.RoleName != "" {
-		roleName = *creds.RoleName
-	}
 
 	var role models.Role
 	if err := config.DB.First(&role, "name = ?", roleName).Error; err != nil {
