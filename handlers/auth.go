@@ -13,6 +13,7 @@ import (
 type Credentials struct {
 	Username string  `json:"username"`
 	Password string  `json:"password"`
+	Email    *string `json:"email"`
 	RoleName *string `json:"roleName"`
 }
 
@@ -40,6 +41,7 @@ func RegisterPromoter(w http.ResponseWriter, r *http.Request) {
 
 	user := models.User{
 		Username: creds.Username,
+		Email:    *creds.Email,
 		Password: string(hashedPassword),
 		RoleID:   role.ID,
 	}
@@ -77,7 +79,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	isSuper := user.Role.Name == "SuperUser"
 
 	// Generate token
-	token, err := utils.GenerateJWT(user.Username, user.Role.Name, isSuper)
+	token, err := utils.GenerateJWT(
+		user.ID.String(), user.Username, user.Role.Name, isSuper,
+	)
 
 	if err != nil {
 		http.Error(w, "Token generation failed", http.StatusInternalServerError)

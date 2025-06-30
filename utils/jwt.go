@@ -7,10 +7,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateJWT(username, roleName string, isSuper bool) (string, error) {
+func GenerateJWT(userId, username, roleName string, isSuper bool) (string, error) {
 	secret := []byte(os.Getenv("JWT_SECRET"))
 
 	claims := jwt.MapClaims{
+		"userId":   userId,
 		"username": username,
 		"role":     roleName,
 		"isSuper":  isSuper,

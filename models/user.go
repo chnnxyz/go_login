@@ -8,14 +8,15 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
-	Username  string    `gorm:"unique;not null"`
-	Email     string    `gorm:"unique;not null"`
-	Password  string    `gorm:"not null"`
-	RoleID    uuid.UUID `gorm:"type:uuid"` // Foreign key
-	Role      Role      `gorm:"foreignKey:RoleID"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID           uuid.UUID `gorm:"type:uuid;primaryKey"`
+	Username     string    `gorm:"unique;not null"`
+	Email        string    `gorm:"unique;not null"`
+	Password     string    `gorm:"not null"`
+	RoleID       uuid.UUID `gorm:"type:uuid"` // Foreign key
+	Role         Role      `gorm:"foreignKey:RoleID"`
+	RegisteredBy uuid.UUID
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // BeforeCreate hook to set UUID before inserting a new record
