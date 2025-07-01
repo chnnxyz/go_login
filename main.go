@@ -43,5 +43,8 @@ func main() {
 	// Wrap the router with CORS middleware
 	handler := corsOptions.Handler(r)
 	log.Println("Auth service running on :8081")
-	http.ListenAndServe(":8081", handler)
+	err := http.ListenAndServe(":8081", handler)
+	if err != nil {
+		log.Fatalf("ListenAndServe failed: %v", err)
+	}
 }
