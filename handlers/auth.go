@@ -3,10 +3,12 @@ package handlers
 import (
 	"context"
 	"cyberia_auth/config"
+	"cyberia_auth/helpers"
 	"cyberia_auth/models"
 	"cyberia_auth/proto/notificationpb"
 	"cyberia_auth/utils"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -22,7 +24,7 @@ type Credentials struct {
 	RoleName *string `json:"roleName"`
 }
 
-func sendVerificationEmail(userID, email, username string) {
+func sendVerificationEmail(userID, email, username, token string) {
 	conn, err := grpc.Dial(
 		"localhost:50054", grpc.WithInsecure(),
 		grpc.WithBlock(), grpc.WithTimeout(3*time.Second))
@@ -41,6 +43,7 @@ func sendVerificationEmail(userID, email, username string) {
 		UserId:   userID,
 		Email:    email,
 		Username: username,
+		Token:    token,
 	})
 	if err != nil {
 		log.Printf("Failed to send verification email: %v", err)
@@ -80,8 +83,13 @@ func RegisterPromoter(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Username taken or database error", http.StatusBadRequest)
 		return
 	}
+	token, err := helpers.GenerateToken(user.Email, false)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("%s", err), http.StatusInternalServerError)
+		return
+	}
 
-	sendVerificationEmail(user.ID.String(), user.Email, user.Username)
+	sendVerificationEmail(user.ID.String(), user.Email, user.Username, token)
 	w.WriteHeader(http.StatusCreated)
 }
 
