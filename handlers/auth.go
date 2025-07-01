@@ -1,13 +1,18 @@
 package handlers
 
 import (
+	"context"
 	"cyberia_auth/config"
 	"cyberia_auth/models"
+	"cyberia_auth/proto/notificationpb"
 	"cyberia_auth/utils"
 	"encoding/json"
+	"log"
 	"net/http"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc"
 )
 
 type Credentials struct {
@@ -15,6 +20,31 @@ type Credentials struct {
 	Password string  `json:"password"`
 	Email    *string `json:"email"`
 	RoleName *string `json:"roleName"`
+}
+
+func sendVerificationEmail(userID, email, username string) {
+	conn, err := grpc.Dial(
+		"localhost:50054", grpc.WithInsecure(),
+		grpc.WithBlock(), grpc.WithTimeout(3*time.Second))
+	if err != nil {
+		log.Printf("Could not connect to email service: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	client := notificationpb.NewEmailServiceClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err = client.SendVerificationEmail(ctx, &notificationpb.VerificationRequest{
+		UserId:   userID,
+		Email:    email,
+		Username: username,
+	})
+	if err != nil {
+		log.Printf("Failed to send verification email: %v", err)
+	}
 }
 
 func RegisterPromoter(w http.ResponseWriter, r *http.Request) {
@@ -51,6 +81,7 @@ func RegisterPromoter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sendVerificationEmail(user.ID.String(), user.Email, user.Username)
 	w.WriteHeader(http.StatusCreated)
 }
 

@@ -15,6 +15,7 @@ type User struct {
 	RoleID       uuid.UUID `gorm:"type:uuid"` // Foreign key
 	Role         Role      `gorm:"foreignKey:RoleID"`
 	RegisteredBy uuid.UUID
+	IsVerified   bool `gorm:"default:false"`
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }

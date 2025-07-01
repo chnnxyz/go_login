@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package notifications;
+
+option go_package = "proto/notificationpb";
+
+service EmailService {
+  rpc SendVerificationEmail (VerificationRequest) returns (EmailResponse);
+  rpc SendTicketEmail (TicketSendRequest) returns (EmailResponse);
+}
+
+message VerificationRequest {
+  string user_id = 1;
+  string email = 2;
+  string username = 3;
+}
+message Attachment {
+  string name = 1;
+  string type = 2;
+  string data = 3;
+}
+message TicketSendRequest {
+  string buyer_name = 1;
+  string buyer_email = 2;
+  string event_name = 3;
+  repeated Attachment attachments = 4;
+}
+
+message EmailResponse {
+  bool success = 1;
+  string message = 2;
+}
