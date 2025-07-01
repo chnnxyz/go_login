@@ -29,6 +29,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/auth/register", handlers.RegisterPromoter).Methods("POST")
 	r.HandleFunc("/auth/login", handlers.Login).Methods("POST")
+	r.HandleFunc("/auth/verify/{token}", handlers.VerifyEmailHandler).Methods("GET")
 	// Set up CORS options
 	corsOptions := cors.New(cors.Options{
 		AllowedOrigins: []string{
